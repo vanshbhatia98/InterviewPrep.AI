@@ -197,27 +197,40 @@ function Step2Interview({ interviewData, onFinish, onBack }) {
     recognition.interimResults = true;
 
     recognition.onresult = (event) => {
-      // Rebuild the full finalized transcript from ALL results every time,
-      // instead of appending only the "new" slice at event.resultIndex.
-      // Chrome's continuous mode is known to occasionally re-emit already
-      // finalized results with resultIndex reset, which caused the same
-      // line to get appended repeatedly. Rebuilding from scratch and
-      // combining with whatever text existed before this mic session
-      // started (baseAnswerRef) is immune to that, since it always
-      // replaces rather than appends.
+      // This recognizer re-finalizes the SAME growing utterance multiple
+      // times ("can" -> "can you" -> "can you tell" -> ...), marking each
+      // longer revision as "final" in its own right rather than replacing
+      // the previous one. So each final segment can be: (a) already fully
+      // contained in what we've built so far — skip it, (b) a longer
+      // extension that contains what we've built so far — replace with
+      // it, or (c) genuinely new/unrelated content — append it.
       let finalText = "";
       let interimText = "";
 
       for (let i = 0; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
         if (event.results[i].isFinal) {
-          finalText += transcript + " ";
+          const segment = transcript.trim();
+          if (!segment) continue;
+
+          const segLower = segment.toLowerCase();
+          const finalLower = finalText.toLowerCase();
+
+          if (finalLower.includes(segLower)) {
+            // already have this (or more) — ignore
+          } else if (finalText && segLower.includes(finalLower)) {
+            // longer revision of what we have — replace
+            finalText = segment;
+          } else {
+            // new content — append
+            finalText = finalText ? finalText + " " + segment : segment;
+          }
         } else {
           interimText += transcript;
         }
       }
 
-      setAnswer(baseAnswerRef.current + finalText);
+      setAnswer(baseAnswerRef.current + finalText + (finalText ? " " : ""));
       setLiveTranscript(interimText);
     };
 
