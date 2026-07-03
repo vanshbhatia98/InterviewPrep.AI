@@ -37,7 +37,7 @@ function Home() {
   return (
     <div className="min-h-screen bg-white">
       {/* Navbar */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100 px-3 sm:px-6 py-3 sm:py-4 overflow-x-hidden">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100 px-3 sm:px-6 py-3 sm:py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-2">
           <span className="text-base sm:text-xl font-bold text-indigo-600 shrink-0">InterviewPrep.AI</span>
           <div className="flex items-center gap-1.5 sm:gap-4 shrink-0">
