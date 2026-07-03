@@ -15,6 +15,7 @@ function Step2Interview({ interviewData, onFinish, onBack }) {
   const recognitionRef = useRef(null);
   const isMicOnRef = useRef(true);
   const isAIPlayingRef = useRef(false);
+  const lastFinalRef = useRef("");
   const [isAIPlaying, setIsAIPlaying] = useState(false);
 
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -209,7 +210,16 @@ function Step2Interview({ interviewData, onFinish, onBack }) {
       }
 
       if (finalText) {
-        setAnswer((prev) => prev + finalText);
+        const cleaned = finalText.trim();
+        // Chrome periodically ends a "continuous" recognition session on
+        // its own (even mid-answer) and we restart it below — but on
+        // restart it sometimes re-delivers the same phrase as a brand new
+        // "final" result. Skip appending if it's an exact repeat of the
+        // last chunk we already added.
+        if (cleaned && cleaned !== lastFinalRef.current) {
+          lastFinalRef.current = cleaned;
+          setAnswer((prev) => prev + finalText);
+        }
         setLiveTranscript("");
       } else {
         setLiveTranscript(interimText);
@@ -218,7 +228,14 @@ function Step2Interview({ interviewData, onFinish, onBack }) {
 
     recognition.onend = () => {
       if (isMicOnRef.current && !isAIPlayingRef.current) {
-        try { recognition.start(); } catch {}
+        // Small delay before restarting so back-to-back end/start cycles
+        // (which is what produces the repeated mic on/off sound) don't
+        // fire in a tight loop.
+        setTimeout(() => {
+          if (isMicOnRef.current && !isAIPlayingRef.current) {
+            try { recognition.start(); } catch {}
+          }
+        }, 300);
       }
     };
 
@@ -297,6 +314,7 @@ function Step2Interview({ interviewData, onFinish, onBack }) {
   setAnswer("");
   setFeedback("");
   setLiveTranscript("");
+  lastFinalRef.current = "";
 
   if (currentIndex + 1 >= questions.length) {
     finishInterview();
