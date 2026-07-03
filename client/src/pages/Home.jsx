@@ -37,26 +37,27 @@ function Home() {
   return (
     <div className="min-h-screen bg-white">
       {/* Navbar */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100 px-6 py-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <span className="text-xl font-bold text-indigo-600">InterviewPrep.AI</span>
-          <div className="flex items-center gap-4">
-            <button onClick={() => navigate('/pricing')} className="text-gray-600 hover:text-indigo-600 text-sm font-medium transition">Pricing</button>
-            <button onClick={() => goOrAuth('/history')} className="text-gray-600 hover:text-indigo-600 text-sm font-medium transition">History</button>
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100 px-3 sm:px-6 py-3 sm:py-4 overflow-x-hidden">
+        <div className="max-w-6xl mx-auto flex items-center justify-between gap-2">
+          <span className="text-base sm:text-xl font-bold text-indigo-600 shrink-0">InterviewPrep.AI</span>
+          <div className="flex items-center gap-1.5 sm:gap-4 shrink-0">
+            <button onClick={() => navigate('/pricing')} className="hidden sm:inline-block text-gray-600 hover:text-indigo-600 text-sm font-medium transition">Pricing</button>
+            <button onClick={() => goOrAuth('/history')} className="hidden sm:inline-block text-gray-600 hover:text-indigo-600 text-sm font-medium transition">History</button>
 
             {userData ? (
               <>
-                <button onClick={() => navigate('/pricing')} className="flex items-center gap-2 bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-full text-sm font-medium hover:bg-indigo-100 transition">
-                  <BsCoin size={16} />
+                <button onClick={() => navigate('/pricing')} className="flex items-center gap-1 sm:gap-2 bg-indigo-50 text-indigo-700 px-2.5 sm:px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium hover:bg-indigo-100 transition">
+                  <BsCoin size={14} />
                   {userData.credits || 0}
                 </button>
                 <div className="relative">
-                  <button onClick={() => setShowUserPopup(!showUserPopup)} className="w-9 h-9 bg-indigo-600 text-white rounded-full flex items-center justify-center font-semibold text-sm">
+                  <button onClick={() => setShowUserPopup(!showUserPopup)} className="w-8 h-8 sm:w-9 sm:h-9 bg-indigo-600 text-white rounded-full flex items-center justify-center font-semibold text-sm shrink-0">
                     {userData.name?.slice(0, 1).toUpperCase()}
                   </button>
                   {showUserPopup && (
                     <div className="absolute right-0 mt-3 w-48 bg-white shadow-xl border border-gray-100 rounded-xl p-4 z-50">
                       <p className="text-sm text-gray-800 font-medium mb-1 truncate">{userData.name}</p>
+                      <button onClick={() => { setShowUserPopup(false); navigate('/pricing') }} className="w-full text-left text-sm py-2 text-gray-600 hover:text-indigo-600 transition sm:hidden">Pricing</button>
                       <button onClick={() => { setShowUserPopup(false); navigate('/history') }} className="w-full text-left text-sm py-2 text-gray-600 hover:text-indigo-600 transition">Interview History</button>
                       <button onClick={handleLogout} className="w-full text-left text-sm py-2 flex items-center gap-2 text-red-500">
                         <HiOutlineLogout size={16} />
@@ -67,7 +68,7 @@ function Home() {
                 </div>
               </>
             ) : (
-              <button onClick={() => setShowAuth(true)} className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition">Sign In</button>
+              <button onClick={() => setShowAuth(true)} className="px-3 sm:px-4 py-2 bg-indigo-600 text-white text-xs sm:text-sm font-medium rounded-xl hover:bg-indigo-700 transition shrink-0">Sign In</button>
             )}
           </div>
         </div>
