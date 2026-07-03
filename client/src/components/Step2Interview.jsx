@@ -42,11 +42,11 @@ function Step2Interview({ interviewData, onFinish, onBack }) {
 
       // Try known female voices first
       const femaleVoice =
-        voices.find(v =>
-          v.name.toLowerCase().includes("zira") ||
-          v.name.toLowerCase().includes("samantha") ||
-          v.name.toLowerCase().includes("female")
-        );
+        voices.find(v => {
+          const name = v.name.toLowerCase();
+          return ["zira", "samantha", "female", "aria", "ava", "jenny", "michelle", "emma", "sara", "heera"]
+            .some(keyword => name.includes(keyword));
+        });
 
       if (femaleVoice) {
         setSelectedVoice(femaleVoice);
@@ -56,11 +56,11 @@ function Step2Interview({ interviewData, onFinish, onBack }) {
 
       // Try known male voices
       const maleVoice =
-        voices.find(v =>
-          v.name.toLowerCase().includes("david") ||
-          v.name.toLowerCase().includes("mark") ||
-          v.name.toLowerCase().includes("male")
-        );
+        voices.find(v => {
+          const name = v.name.toLowerCase();
+          return ["david", "mark", "male", "guy", "andrew", "brian", "christopher", "eric", "roger", "ravi"]
+            .some(keyword => name.includes(keyword));
+        });
 
       if (maleVoice) {
         setSelectedVoice(maleVoice);
@@ -101,6 +101,12 @@ function Step2Interview({ interviewData, onFinish, onBack }) {
       utterance.onstart = () => {
         setIsAIPlaying(true);
         isAIPlayingRef.current = true;
+        // Mic is manual-only: if it was on, force it off while the AI talks
+        // and leave it off — the user has to click it again when ready.
+        if (isMicOnRef.current) {
+          isMicOnRef.current = false;
+          setIsMicOn(false);
+        }
         stopMic()
         videoRef.current?.play();
       };
@@ -110,10 +116,6 @@ function Step2Interview({ interviewData, onFinish, onBack }) {
         videoRef.current.currentTime = 0;
         setIsAIPlaying(false);
         isAIPlayingRef.current = false;
-
-        if (isMicOnRef.current) {
-          startMic();
-        }
 
         setTimeout(() => {
           setSubtitle("");
@@ -150,10 +152,7 @@ function Step2Interview({ interviewData, onFinish, onBack }) {
         }
 
         await speakText(currentQuestion.question);
-
-        if (isMicOn) {
-          startMic();
-        }
+        // Mic is manual-only — user clicks the mic button when ready to answer.
       }
 
     }
@@ -211,11 +210,8 @@ function Step2Interview({ interviewData, onFinish, onBack }) {
 
       if (finalText) {
         const cleaned = finalText.trim();
-        // Chrome periodically ends a "continuous" recognition session on
-        // its own (even mid-answer) and we restart it below — but on
-        // restart it sometimes re-delivers the same phrase as a brand new
-        // "final" result. Skip appending if it's an exact repeat of the
-        // last chunk we already added.
+        // Guards against the same phrase being delivered twice in one
+        // listening session.
         if (cleaned && cleaned !== lastFinalRef.current) {
           lastFinalRef.current = cleaned;
           setAnswer((prev) => prev + finalText);
@@ -227,15 +223,13 @@ function Step2Interview({ interviewData, onFinish, onBack }) {
     };
 
     recognition.onend = () => {
-      if (isMicOnRef.current && !isAIPlayingRef.current) {
-        // Small delay before restarting so back-to-back end/start cycles
-        // (which is what produces the repeated mic on/off sound) don't
-        // fire in a tight loop.
-        setTimeout(() => {
-          if (isMicOnRef.current && !isAIPlayingRef.current) {
-            try { recognition.start(); } catch {}
-          }
-        }, 300);
+      // Manual-only mic: never auto-restart. If the browser ended the
+      // session on its own (e.g. after a pause), just reflect that in the
+      // UI so the mic button accurately shows "off" — the user has to
+      // click it again to keep answering.
+      if (isMicOnRef.current) {
+        isMicOnRef.current = false;
+        setIsMicOn(false);
       }
     };
 
@@ -324,9 +318,7 @@ function Step2Interview({ interviewData, onFinish, onBack }) {
   await speakText("Alright, let's move to the next question.");
 
   setCurrentIndex(currentIndex + 1);
-  setTimeout(() => {
-    if (isMicOn) startMic();
-  }, 500);
+  // Mic is manual-only — user clicks the mic button when ready to answer.
 }
 
 const finishInterview = async () => {
