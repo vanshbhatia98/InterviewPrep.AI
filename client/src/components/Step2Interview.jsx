@@ -15,7 +15,7 @@ function Step2Interview({ interviewData, onFinish, onBack }) {
   const recognitionRef = useRef(null);
   const isMicOnRef = useRef(true);
   const isAIPlayingRef = useRef(false);
-  const lastFinalRef = useRef("");
+  const baseAnswerRef = useRef("");
   const [isAIPlaying, setIsAIPlaying] = useState(false);
 
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -197,29 +197,28 @@ function Step2Interview({ interviewData, onFinish, onBack }) {
     recognition.interimResults = true;
 
     recognition.onresult = (event) => {
+      // Rebuild the full finalized transcript from ALL results every time,
+      // instead of appending only the "new" slice at event.resultIndex.
+      // Chrome's continuous mode is known to occasionally re-emit already
+      // finalized results with resultIndex reset, which caused the same
+      // line to get appended repeatedly. Rebuilding from scratch and
+      // combining with whatever text existed before this mic session
+      // started (baseAnswerRef) is immune to that, since it always
+      // replaces rather than appends.
       let finalText = "";
       let interimText = "";
 
-      for (let i = event.resultIndex; i < event.results.length; i++) {
+      for (let i = 0; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
         if (event.results[i].isFinal) {
-          finalText += event.results[i][0].transcript + " ";
+          finalText += transcript + " ";
         } else {
-          interimText += event.results[i][0].transcript;
+          interimText += transcript;
         }
       }
 
-      if (finalText) {
-        const cleaned = finalText.trim();
-        // Guards against the same phrase being delivered twice in one
-        // listening session.
-        if (cleaned && cleaned !== lastFinalRef.current) {
-          lastFinalRef.current = cleaned;
-          setAnswer((prev) => prev + finalText);
-        }
-        setLiveTranscript("");
-      } else {
-        setLiveTranscript(interimText);
-      }
+      setAnswer(baseAnswerRef.current + finalText);
+      setLiveTranscript(interimText);
     };
 
     recognition.onend = () => {
@@ -274,6 +273,10 @@ function Step2Interview({ interviewData, onFinish, onBack }) {
     const next = !isMicOn;
     isMicOnRef.current = next;
     if (next) {
+      // Capture whatever's already in the textarea (typed or from a
+      // previous mic session) so this new session's rebuilt transcript
+      // gets appended on top of it instead of replacing it.
+      baseAnswerRef.current = answer;
       startMic();
     } else {
       stopMic();
@@ -308,7 +311,7 @@ function Step2Interview({ interviewData, onFinish, onBack }) {
   setAnswer("");
   setFeedback("");
   setLiveTranscript("");
-  lastFinalRef.current = "";
+  baseAnswerRef.current = "";
 
   if (currentIndex + 1 >= questions.length) {
     finishInterview();
